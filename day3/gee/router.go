@@ -1,6 +1,9 @@
 package gee
 
-import "strings"
+import (
+	"net/http"
+	"strings"
+)
 
 type Router struct {
 	// 记录每种请求的树根节点 key为请求方法
@@ -52,12 +55,49 @@ func (r Router) addRoute(method string, pattern string, hanlder HandleFunc) {
 
 // 根据真实的URL，解析出路由，以及参数
 func (r *Router) getRouter(method string, path string) (*node, map[string]string) {
+	// 分割URL
+	searchParts := parsePattern(path)
+	// 拿到该方法的路由树
+	root, ok := r.roots[method]
+	if !ok {
+		return nil, nil
+	}
+
+	// 查找路由树，返回一个叶子节点
+	n := root.search(searchParts, 0)
+	// 构造params
+	params := make(map[string]string)
+	if n != nil {
+		parts := parsePattern(n.pattern)
+		for i, part := range parts {
+			if part[0] == ':' {
+				// 等于同位置的路径
+				params[part[1:]] = searchParts[i]
+			}
+
+			if part[0] == '*' && len(part) > 1 {
+				// 把后面所有字符串拼接起来
+				params[part[1:]] = strings.Join(searchParts[i:], "/")
+				break
+			}
+		}
+		return n, params
+	}
 	return nil, nil
 }
 
 func (r *Router) handle(c *Context) {
-	n, paras := r.getRouter(c.Method, c.Path)
+	// 通过真实的路径来解析路由
+	n, params := r.getRouter(c.Method, c.Path)
 	if n != nil {
-		c.Params = paras
+		// 将参数放入context
+		c.Params = params
+		// 拼接key，是方法 + 解析出来的完整路径
+		key := c.Method + "_" + n.pattern
+		// 拿到方法
+		handle := r.handlers[key]
+		handle(c)
+	} else {
+		c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
 	}
 }

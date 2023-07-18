@@ -67,8 +67,8 @@ func (c *Context) String(code int, format string, value ...interface{}) {
 	// 构造状态码
 	c.setCode(code)
 	// 构造响应体
-	// fmt.Sprintf 格式化并返回字符串
-	c.Writer.Write([]byte(fmt.Sprintf(format, value)))
+	// fmt.Sprintf 格式化并返回字符串 ... 放在后面用于解序列
+	c.Writer.Write([]byte(fmt.Sprintf(format, value...)))
 }
 
 func (c *Context) JSON(code int, obj interface{}) {
