@@ -7,21 +7,25 @@ import "net/http"
 type HandleFunc func(c *Context)
 
 // Engine 第一步： 定义结构体
+
 type Engine struct {
 	router *Router
 }
 
 // New 第二步 构造函数
+
 func New() *Engine {
 	return &Engine{router: newRouter()}
 }
 
 // 加入路由
+
 func (engine *Engine) addRouter(method string, pattern string, handler HandleFunc) {
 	engine.router.addRoute(method, pattern, handler)
 }
 
 // GET 第三步：实现GET和POST函数
+
 func (engine *Engine) GET(pattern string, handler HandleFunc) {
 	engine.addRouter("GET", pattern, handler)
 }
@@ -31,6 +35,7 @@ func (engine *Engine) POST(pattern string, hanlder HandleFunc) {
 }
 
 // 第四步：重写ServeHTTP
+
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// 创建context
 	c := newContext(w, req)
@@ -39,6 +44,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // Run 第五步：实现run方法
+
 func (engine *Engine) Run(addr string) (err error) {
 	return http.ListenAndServe(addr, engine)
 }
